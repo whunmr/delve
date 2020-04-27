@@ -13,6 +13,7 @@ require (
 	github.com/mattn/go-isatty v0.0.3
 	github.com/peterh/liner v0.0.0-20170317030525-88609521dc4b
 	github.com/pkg/profile v0.0.0-20170413231811-06b906832ed0
+	github.com/shopspring/decimal v0.0.0-20200419222939-1884f454f8ea
 	github.com/sirupsen/logrus v0.0.0-20180523074243-ea8897e79973
 	github.com/spf13/cobra v0.0.0-20170417170307-b6cb39589372
 	github.com/spf13/pflag v0.0.0-20170417173400-9e4c21054fa1 // indirect

@@ -11,6 +11,7 @@ import (
 	"go/scanner"
 	"io"
 	"math"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,6 +23,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/cosiner/argv"
+	"github.com/shopspring/decimal"
 	"github.com/go-delve/delve/service"
 	"github.com/go-delve/delve/service/api"
 	"github.com/go-delve/delve/service/debugger"
@@ -1525,6 +1527,9 @@ func examineMemoryCmd(t *Term, ctx callContext, args string) error {
 	return nil
 }
 
+
+var nestedPattern = regexp.MustCompile(`^.*neg: ([^,]*).*\[(.*)\].*exp: ([^,]*).*$`)
+
 func printVar(t *Term, ctx callContext, args string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("not enough arguments")
@@ -1538,7 +1543,46 @@ func printVar(t *Term, ctx callContext, args string) error {
 		return err
 	}
 
-	fmt.Println(val.MultilineString(""))
+	s := val.MultilineString("")
+	fmt.Println(s)
+
+	if strings.Contains(s, "github.com/shopspring/decimal.Decimal") {
+		s = strings.Replace(s, "\n", " ", -1)
+		matches := nestedPattern.FindStringSubmatch(s)
+		if len(matches) == 4 {
+			x := big.NewInt(0)
+
+			values := strings.Split(matches[2], ",")
+			valuesLen := len(values)
+
+			bits := make([]big.Word, valuesLen)
+			for i := 0; i < valuesLen; i++ {
+				value, err := strconv.ParseUint(values[i], 10, 64)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+
+				bits[i] = big.Word(value)
+			}
+
+			x.SetBits(bits)
+			exp, err := strconv.ParseInt(matches[3], 10, 32)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			result := decimal.NewFromBigInt(x, int32(exp))
+
+			if matches[1] == "true" {
+				result = result.Neg()
+			}
+
+			fmt.Println("value: " + result.String())
+		}
+	}
+
 	return nil
 }
 
